@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CurrencyConverterMVP.DAL;
+using CurrencyConverterMVP.Presenters;
+using CurrencyConverterMVP.Views;
+using System;
 using System.Windows.Forms;
 
 namespace CurrencyConverterMVP
@@ -16,7 +16,14 @@ namespace CurrencyConverterMVP
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            try
+            {
+                new MainPresenter(new MainView(), new WebValuteService());
+            }
+            catch
+            {
+                new MainPresenter(new MainView(), new LocalValuteService());
+            }
         }
     }
 }
