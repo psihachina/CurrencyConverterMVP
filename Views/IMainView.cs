@@ -18,6 +18,8 @@ namespace CurrencyConverterMVP.Views
         event EventHandler TextChangedRight;
         event EventHandler SelectedHistory;
         event EventHandler OpenChart;
+        event EventHandler OpenSum;
+        event EventHandler OpenEdit;
 
         void Click_SelectedValuteLeft(out Valute leftValute);
         void Click_SelectedValuteRight(out Valute rightValute);
@@ -27,8 +29,8 @@ namespace CurrencyConverterMVP.Views
 
         void ListBoxHistory_Add(BindingList<HistoryItem> val);
 
-        void ListBoxValuteLeft_Add(List<Valute> val);
-        void ListBoxValuteRight_Add(List<Valute> val);
+        void ListBoxValuteLeft_Add(BindingList<Valute> val);
+        void ListBoxValuteRight_Add(BindingList<Valute> val);
 
     }
 }

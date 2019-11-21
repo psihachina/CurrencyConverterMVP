@@ -19,18 +19,29 @@ namespace CurrencyConverterMVP.Views
         public double ValueLeft
         {
             get => Convert.ToDouble(valueLeft.Text);
-            set => valueLeft.Text = value.ToString();
+            set => valueLeft.Text = Math.Round(value, 2).ToString();
         }
         public double ValueRight
         {
             get => Convert.ToDouble(valueRight.Text);
-            set => valueRight.Text = value.ToString();
+            set => valueRight.Text = Math.Round(value, 2).ToString();
         }
 
         public event EventHandler OpenChart
         {
             add => chartsToolStripMenuItem.Click += value;
             remove => chartsToolStripMenuItem.Click -= value;
+        }
+
+        public event EventHandler OpenSum
+        {
+            add => sumToolStripMenuItem.Click += value;
+            remove => sumToolStripMenuItem.Click -= value;
+        }
+        public event EventHandler OpenEdit
+        {
+            add => editToolStripMenuItem.Click += value;
+            remove => editToolStripMenuItem.Click -= value;
         }
 
         public event EventHandler SelectedHistory
@@ -63,12 +74,12 @@ namespace CurrencyConverterMVP.Views
         }
 
 
-        public void ListBoxValuteLeft_Add(List<Valute> val)
+        public void ListBoxValuteLeft_Add(BindingList<Valute> val)
         {
             ValutesLeft.DataSource = val;
             label1.Text = val[0].Name;
         }
-        public void ListBoxValuteRight_Add(List<Valute> val)
+        public void ListBoxValuteRight_Add(BindingList<Valute> val)
         {
             ValutesRight.DataSource = val;
             label2.Text = val[0].Name;

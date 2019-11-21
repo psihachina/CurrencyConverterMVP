@@ -12,7 +12,7 @@ namespace CurrencyConverterMVP.DAL
             Logger lg = new Logger();
             lg.dateTime = DateTime.Now;
             lg.message = mes;
-            const string path = @"C:\Users\vlad0\Desktop\Programming\Учеба\АРХ ИС\lab 3\lab03v2\Converter\Converter\Content\History\logger.xml";
+            const string path = @"D:\Project\CurrencyConverterMVP\CurrencyConverterMVP\logger.xml";
             XElement element = null;
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
             {

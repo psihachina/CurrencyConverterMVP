@@ -18,11 +18,11 @@ namespace CurrencyConverterMVP
             Application.SetCompatibleTextRenderingDefault(false);
             try
             {
-                new MainPresenter(new MainView(), new WebValuteService());
+                new MainPresenter(new MainView(), new WebValuteService(), new LoggerRecordingXML());
             }
             catch
             {
-                new MainPresenter(new MainView(), new LocalValuteService());
+                new MainPresenter(new MainView(), new LocalValuteService(), new LoggerRecordingXML());
             }
         }
     }

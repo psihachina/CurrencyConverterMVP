@@ -4,6 +4,7 @@ using CurrencyConverterMVP.Models;
 using CurrencyConverterMVP.Views;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace CurrencyConverterMVP.Presenters
@@ -12,24 +13,25 @@ namespace CurrencyConverterMVP.Presenters
     {
 
 
-        private List<Valute> _valutesLeft;
-        private List<Valute> _valutesRight;
+        private BindingList<Valute> _valutesLeft;
+        private BindingList<Valute> _valutesRight;
         IValutesService valutesService;
         public IMainView MainView { get; set; }
 
-        public bool IsStartCalculte { get; private set; }
-
+        private bool checkHistory = false;
         private Valute _selectedValuteLeft;
         private Valute _selectedValuteRight;
         private double _selectedValueLeft;
         private double _selectedValueRight;
         private HistoryItem _selectedHistoryItem;
         private History history = new History();
+        ILoggerRecording logger;
 
-        public MainPresenter(IMainView mainView, IValutesService valutesService)
+        public MainPresenter(IMainView mainView, IValutesService valutesService, ILoggerRecording lg)
         {
+            logger = lg;
             MainView = mainView;
-            _valutesLeft = new List<Valute>
+            _valutesLeft = new BindingList<Valute>
             {
                 new Valute
                 {CharCode = "RUS",
@@ -44,8 +46,9 @@ namespace CurrencyConverterMVP.Presenters
 
             this.valutesService = valutesService;
             var valsLeft = valutesService.GetValutes("./Content/daily_utf8.xml");
-            _valutesLeft = _valutesLeft.Union(valsLeft.Valutes).ToList();
-            _valutesRight = new List<Valute>(_valutesLeft);
+            List<Valute> buf = _valutesLeft.Union(valsLeft.Valutes).ToList();
+            _valutesLeft = new BindingList<Valute>(buf); ;
+            _valutesRight = new BindingList<Valute>(_valutesLeft);
 
 
 
@@ -57,30 +60,48 @@ namespace CurrencyConverterMVP.Presenters
 
             MainView.ListBoxHistory_Add(history.Histories);
             MainView.OpenChart += View_OpenChart;
+            MainView.OpenSum += View_OpenSum;
+            MainView.OpenEdit += View_OpenEdit;
             MainView.SelectedValuteLeft += View_SelectedValuteLeft;
             MainView.SelectedValuteRight += View_SelectedValuteRight;
             MainView.TextChangedLeft += View_TextChangedLeft;
             MainView.TextChangedRight += View_TextChangedRight;
             MainView.SelectedHistory += View_SelectedHistory;
+            logger.log("Открытие Программы");
             MainView.Show();
         }
 
         private void View_SelectedHistory(object sender, EventArgs e)
         {
-            MainView.Click_SelectedHistory(out _selectedHistoryItem);
+            checkHistory = true;
+            
+                MainView.Click_SelectedHistory(out _selectedHistoryItem);
 
             _selectedValueLeft = _selectedHistoryItem.FirstValue;
             _selectedValuteRight = _selectedHistoryItem.SecondValute;
             _selectedValueRight = _selectedHistoryItem.SecondValue;
             _selectedValuteLeft = _selectedHistoryItem.FirstValute;
 
-
+            checkHistory = false;
         }
 
         private void View_OpenChart(object sender, EventArgs e)
         {
             new ChartPresenter(new ChartView(), new LocalValuteService());
+            logger.log("Открытие окна графика Валют");
         }
+        private void View_OpenSum(object sender, EventArgs e)
+        {
+            new SumPresenter(new SumView(), _valutesLeft);
+            logger.log("Открытие окна суммирования Валют");
+        }
+
+        private void View_OpenEdit(object sender, EventArgs e)
+        {
+            new EditPresenter(new EditView(), _valutesLeft, _valutesRight);
+            logger.log("Открытие окна редактирования Валют");
+        }
+
 
         private void View_SelectedValuteLeft(object sender, EventArgs e)
         {
@@ -96,64 +117,78 @@ namespace CurrencyConverterMVP.Presenters
         {
             _selectedValueLeft = MainView.ValueLeft;
             MainView.ValueRight = _selectedValuteLeft.CurrentValue * MainView.ValueLeft / _selectedValuteRight.CurrentValue;
+
             AddHistoryLeft();
+
         }
         private void View_TextChangedRight(object sender, EventArgs e)
         {
             _selectedValueRight = MainView.ValueRight;
             MainView.ValueLeft = _selectedValuteRight.CurrentValue * MainView.ValueRight / _selectedValuteLeft.CurrentValue;
+
             AddHistoryRight();
+
         }
 
         private void AddHistoryRight()
         {
-            var item = new HistoryItem
+            if (checkHistory == false)
             {
-                FirstValute = _selectedValuteLeft,
-                SecondValute = _selectedValuteRight,
-                FirstValue = MainView.ValueLeft,
-                SecondValue = MainView.ValueRight,
-                Direction = false,
-                DirectionString = " <- "
-            };
-            if (history.Histories.Count > 0)
-            {
-                var last = history.Histories.Last();
-                if (last == null || (((last.FirstValue != _selectedValueLeft) || (last.SecondValue != _selectedValueRight))
-                                     || ((last.FirstValute != _selectedValuteLeft) || (last.SecondValute != _selectedValuteRight))))
+                logger.log($"Добавлена запись в историю");
+                var item = new HistoryItem
+                {
+                    FirstValute = _selectedValuteLeft,
+                    SecondValute = _selectedValuteRight,
+                    FirstValue = MainView.ValueLeft,
+                    SecondValue = MainView.ValueRight,
+                    Direction = false,
+                    DirectionString = " <- "
+                };
+                if (history.Histories.Count > 0)
+                {
+                    var last = history.Histories.Last();
+                    if (last == null || (((last.FirstValue != _selectedValueLeft) ||
+                                          (last.SecondValue != _selectedValueRight))
+                                         || ((last.FirstValute != _selectedValuteLeft) ||
+                                             (last.SecondValute != _selectedValuteRight))))
+                        history.Histories.Add(item);
+                    MainView.ListBoxHistory_Add(history.Histories);
+                }
+                else
+                {
                     history.Histories.Add(item);
-                MainView.ListBoxHistory_Add(history.Histories);
-            }
-            else
-            {
-                history.Histories.Add(item);
-                MainView.ListBoxHistory_Add(history.Histories);
+                    MainView.ListBoxHistory_Add(history.Histories);
+                }
             }
         }
 
         private void AddHistoryLeft()
         {
-            // logger.Write("Add left history");
-
-            var item = new HistoryItem
+            if (checkHistory == false)
             {
-                FirstValute = _selectedValuteLeft,
-                SecondValute = _selectedValuteRight,
-                FirstValue = MainView.ValueLeft,
-                SecondValue = MainView.ValueRight,
-                Direction = false,
-                DirectionString = " -> "
-            };
-            if (history.Histories.Count > 0)
-            {
-                var last = history.Histories.Last();
-                if (last == null || (((last.FirstValue != _selectedValueLeft) || (last.SecondValue != _selectedValueRight))
-                                     || ((last.FirstValute != _selectedValuteLeft) || (last.SecondValute != _selectedValuteRight))))
+                logger.log($"Добавлена запись в историю");
+                var item = new HistoryItem
+                {
+                    FirstValute = _selectedValuteLeft,
+                    SecondValute = _selectedValuteRight,
+                    FirstValue = MainView.ValueLeft,
+                    SecondValue = MainView.ValueRight,
+                    Direction = false,
+                    DirectionString = " -> "
+                };
+                if (history.Histories.Count > 0)
+                {
+                    var last = history.Histories.Last();
+                    if (last == null || (((last.FirstValue != _selectedValueLeft) ||
+                                          (last.SecondValue != _selectedValueRight))
+                                         || ((last.FirstValute != _selectedValuteLeft) ||
+                                             (last.SecondValute != _selectedValuteRight))))
+                        history.Histories.Add(item);
+                }
+                else
+                {
                     history.Histories.Add(item);
-            }
-            else
-            {
-                history.Histories.Add(item);
+                }
             }
         }
 
